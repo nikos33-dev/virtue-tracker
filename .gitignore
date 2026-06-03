@@ -1,0 +1,9 @@
+# Your personal data never gets committed
+log.jsonl
+*.db
+reports/
+
+# Cruft
+__pycache__/
+*.pyc
+.DS_Store

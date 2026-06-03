@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Virtues — daily review</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #f7f6f3; --card: #fff; --ink: #1d1d1f; --mut: #6b6b70;
+    --line: #e6e4df; --focal: #b07a2e; --focalbg: #fbf3e4;
+    --fault: #c0392b; --ok: #cfd6cc; --accent: #2f6f4f;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+         background: var(--bg); color: var(--ink); }
+  header { padding: 18px 22px; border-bottom: 1px solid var(--line); background: var(--card);
+           position: sticky; top: 0; z-index: 5; }
+  h1 { margin: 0 0 4px; font-size: 18px; }
+  .sub { color: var(--mut); font-size: 13px; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 18px 16px 80px; }
+  .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .tabs { display: flex; gap: 6px; margin-top: 10px; }
+  .tab { padding: 6px 14px; border: 1px solid var(--line); border-radius: 999px; cursor: pointer;
+         background: var(--card); font-size: 13px; }
+  .tab.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+  input[type=date] { font: inherit; padding: 5px 8px; border: 1px solid var(--line); border-radius: 8px; }
+  button.save { font: inherit; font-weight: 600; padding: 9px 20px; border: 0; border-radius: 10px;
+                background: var(--accent); color: #fff; cursor: pointer; }
+  button.save:disabled { opacity: .5; cursor: default; }
+
+  .focal { background: var(--focalbg); border: 1px solid #ecdcc0; border-radius: 14px;
+           padding: 14px 16px; margin: 16px 0; }
+  .focal .lab { color: var(--focal); font-weight: 700; font-size: 12px; letter-spacing: .04em;
+                text-transform: uppercase; }
+  .focal h2 { margin: 2px 0 4px; font-size: 20px; }
+  .focal .precept { color: #5b4a30; font-size: 14px; }
+  textarea { width: 100%; margin-top: 8px; font: inherit; padding: 9px; border: 1px solid var(--line);
+             border-radius: 8px; resize: vertical; min-height: 52px; background: #fff; }
+
+  ul.virtues { list-style: none; margin: 8px 0 0; padding: 0; }
+  li.virtue { display: flex; align-items: flex-start; gap: 10px; padding: 9px 4px;
+              border-bottom: 1px solid var(--line); }
+  li.virtue.isfocal { background: var(--focalbg); border-radius: 8px; }
+  .ord { width: 22px; color: var(--mut); font-variant-numeric: tabular-nums; text-align: right;
+         padding-top: 2px; font-size: 13px; }
+  .vname { font-weight: 600; }
+  .vmid { flex: 1; min-width: 0; }
+  .tier { color: var(--mut); font-size: 11px; }
+  .vnote { width: 100%; margin-top: 6px; font: inherit; font-size: 13px; padding: 6px 8px;
+           border: 1px dashed var(--line); border-radius: 7px; display: block; }
+  .vnote.hasfault { border-color: var(--fault); }
+  .faultbox { display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;
+              font-size: 12px; color: var(--mut); padding-top: 2px; }
+  .faultbox input { width: 17px; height: 17px; accent-color: var(--fault); cursor: pointer; }
+
+  /* ? hover tooltip */
+  .help { position: relative; display: inline-flex; align-items: center; justify-content: center;
+          width: 17px; height: 17px; border-radius: 50%; border: 1px solid var(--mut);
+          color: var(--mut); font-size: 11px; font-weight: 700; cursor: help; flex: none; }
+  .help .tip { visibility: hidden; opacity: 0; transition: opacity .12s; position: absolute;
+               left: 24px; top: -4px; width: 300px; background: var(--ink); color: #fff;
+               padding: 10px 12px; border-radius: 10px; font-size: 12.5px; font-weight: 400;
+               line-height: 1.4; z-index: 20; box-shadow: 0 6px 22px rgba(0,0,0,.22); }
+  .help:hover .tip { visibility: visible; opacity: 1; }
+  .tip .bite { display: block; margin-top: 6px; color: #ffd9a8; font-style: italic; }
+  .tip .dot  { display: block; margin-top: 6px; color: #c9c9cf; }
+
+  /* charts */
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+           padding: 16px; margin-bottom: 16px; }
+  .panel h3 { margin: 0 0 4px; font-size: 15px; }
+  .panel .note { color: var(--mut); font-size: 12px; margin: 0 0 10px; }
+  table.grid { border-collapse: collapse; font-size: 12px; width: 100%; }
+  table.grid th, table.grid td { border: 1px solid var(--line); padding: 4px 6px; text-align: center; }
+  table.grid th.rowlab, table.grid td.rowlab { text-align: left; white-space: nowrap; font-weight: 600; }
+  td.cell-f { background: var(--fault); color: #fff; }
+  td.cell-o { background: #eef3ef; color: var(--accent); }
+  td.cell-n { background: #fafafa; color: #bbb; }
+  tr.focalrow td.rowlab { color: var(--focal); }
+  .navbtn { font: inherit; font-size: 13px; padding: 4px 11px; border: 1px solid var(--line);
+            border-radius: 8px; background: var(--card); cursor: pointer; }
+  .navbtn:hover:not(:disabled) { background: var(--bg); }
+  .navbtn:disabled { opacity: .4; cursor: default; }
+  .hide { display: none; }
+  /* confirm modal */
+  .modal-bg { position: fixed; inset: 0; background: rgba(20,18,14,.45); display: none;
+              align-items: center; justify-content: center; z-index: 50; }
+  .modal-bg.show { display: flex; }
+  .modal { background: var(--card); border-radius: 14px; padding: 20px 22px; width: 390px;
+           max-width: calc(100vw - 32px); box-shadow: 0 18px 50px rgba(0,0,0,.3);
+           transform: translateY(6px); transition: transform .12s; }
+  .modal-bg.show .modal { transform: translateY(0); }
+  .modal h3 { margin: 0 0 8px; font-size: 17px; }
+  .modal p { margin: 0 0 18px; color: var(--mut); font-size: 14px; line-height: 1.5; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+  .modal-actions button { font: inherit; font-weight: 600; padding: 8px 16px; border-radius: 9px;
+                          cursor: pointer; border: 1px solid var(--line); }
+  .btn-ghost { background: var(--card); color: var(--ink); }
+  .btn-danger { background: var(--fault); color: #fff; border-color: var(--fault); }
+
+  .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+           background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 10px;
+           font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Virtues — daily review</h1>
+  <div class="row">
+    <label class="sub">Reviewing day:
+      <input type="date" id="datePick">
+    </label>
+    <span class="sub" id="weekInfo"></span>
+  </div>
+  <div class="tabs">
+    <div class="tab active" data-tab="review">Review</div>
+    <div class="tab" data-tab="charts">Charts</div>
+  </div>
+</header>
+
+<div class="wrap">
+  <!-- REVIEW TAB -->
+  <section id="tab-review">
+    <div class="focal" id="focalCard">
+      <span class="lab">Focal this week</span>
+      <h2 id="focalName">—</h2>
+      <div class="precept" id="focalPrecept"></div>
+      <textarea id="focalNote" placeholder="Focal note — how did the week's virtue go today? (required for the focal virtue)"></textarea>
+    </div>
+
+    <p class="sub">Mark a fault (a "black dot") against any virtue you failed today. Hover the <b>?</b> for its precept. Add a note on any virtue — what went wrong, or what went right. The notes feed your coaching review.</p>
+    <ul class="virtues" id="vlist"></ul>
+
+    <div class="row" style="margin-top:18px; justify-content:flex-end;">
+      <span class="sub" id="saveHint"></span>
+      <button class="save" id="saveBtn">Save review</button>
+    </div>
+  </section>
+
+  <!-- CHARTS TAB -->
+  <section id="tab-charts" class="hide">
+    <div class="panel">
+      <div class="row" style="justify-content:space-between; align-items:center;">
+        <h3 style="margin:0;">Franklin grid</h3>
+        <div class="row" style="gap:8px; align-items:center;">
+          <button class="navbtn" id="gridPrev">‹ Prev</button>
+          <span class="sub" id="gridWeekLabel" style="min-width:190px; text-align:center;"></span>
+          <button class="navbtn" id="gridNext">Next ›</button>
+        </div>
+      </div>
+      <p class="note" id="gridNote"></p>
+      <div id="gridWrap" style="overflow:auto;"></div>
+    </div>
+    <div class="panel">
+      <h3>Daily faults over time</h3>
+      <p class="note">Total black dots per reviewed day. The line you want trending down.</p>
+      <canvas id="cDaily" height="120"></canvas>
+    </div>
+    <div class="panel">
+      <h3>Faults by virtue</h3>
+      <p class="note">Where the work is. Total faults logged per virtue (all time).</p>
+      <canvas id="cVirtue" height="220"></canvas>
+    </div>
+    <div class="panel">
+      <h3>Pass over pass</h3>
+      <p class="note" id="passNote">Franklin's thesis: faults diminish each time the cycle comes around. Fills in after your first full 23-week pass.</p>
+      <canvas id="cPass" height="220"></canvas>
+    </div>
+    <div class="panel">
+      <h3>Focal-week lift</h3>
+      <p class="note">For virtues that have had a focal week: fault rate while focal (left) vs. the rest of the time (right). Lower-while-focal means the spotlight works.</p>
+      <canvas id="cFocal" height="220"></canvas>
+    </div>
+  </section>
+</div>
+
+<div class="modal-bg" id="modal">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3 id="modalTitle"></h3>
+    <p id="modalMsg"></p>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="modalCancel">Cancel</button>
+      <button class="btn-danger" id="modalOk">Overwrite</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let CFG = null, VIRT = [], charts = {}, dayLogged = false, loggedAt = null;
+const $ = s => document.querySelector(s);
+
+function reflectLogged() {
+  const btn = $("#saveBtn"), hint = $("#saveHint");
+  btn.textContent = dayLogged ? "Update review" : "Save review";
+  if (dayLogged) {
+    const t = loggedAt ? loggedAt.replace("T", " ").slice(0, 16) : "earlier";
+    hint.textContent = `Already logged (${t}) — saving overwrites it.`;
+  } else {
+    hint.textContent = "";
+  }
+}
+
+function toast(msg) {
+  const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 1800);
+}
+
+function esc(s) { return (s||"").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+function confirmModal(title, message, okLabel = "Overwrite") {
+  return new Promise(resolve => {
+    const ov = $("#modal"), ok = $("#modalOk"), cancel = $("#modalCancel");
+    $("#modalTitle").textContent = title;
+    $("#modalMsg").textContent = message;
+    ok.textContent = okLabel;
+    ov.classList.add("show");
+    ok.focus();
+    function done(val) {
+      ov.classList.remove("show");
+      ok.removeEventListener("click", onOk);
+      cancel.removeEventListener("click", onCancel);
+      ov.removeEventListener("click", onBackdrop);
+      document.removeEventListener("keydown", onKey);
+      resolve(val);
+    }
+    const onOk = () => done(true);
+    const onCancel = () => done(false);
+    const onBackdrop = e => { if (e.target === ov) done(false); };
+    const onKey = e => { if (e.key === "Escape") done(false); if (e.key === "Enter") done(true); };
+    ok.addEventListener("click", onOk);
+    cancel.addEventListener("click", onCancel);
+    ov.addEventListener("click", onBackdrop);
+    document.addEventListener("keydown", onKey);
+  });
+}
+
+async function loadConfig(dateStr) {
+  const q = dateStr ? "?date=" + dateStr : "";
+  CFG = await (await fetch("/api/config" + q)).json();
+  VIRT = CFG.virtues;
+  if (!$("#datePick").value) $("#datePick").value = CFG.suggested_day;
+}
+
+function renderHeader() {
+  const s = CFG.selected;
+  const fv = VIRT.find(v => v.slug === s.focal);
+  $("#weekInfo").textContent =
+    `Week ${s.week} · pass ${s.pass} · focal: ${fv.name}` +
+    ($("#datePick").value === CFG.today ? "" :
+      ($("#datePick").value < CFG.today ? " · (a past day)" : " · (a future day)"));
+  $("#focalName").textContent = fv.name;
+  $("#focalPrecept").textContent = fv.precept;
+}
+
+function tipHTML(v) {
+  let h = esc(v.precept);
+  if (v.dot)  h += `<span class="dot">${esc(v.dot)}</span>`;
+  if (v.bite) h += `<span class="bite">${esc(v.bite)}</span>`;
+  return h;
+}
+
+function renderList(dayData) {
+  const focal = CFG.selected.focal;
+  const ul = $("#vlist"); ul.innerHTML = "";
+  for (const v of VIRT) {
+    const e = (dayData.entries || {})[v.slug] || {};
+    const li = document.createElement("li");
+    li.className = "virtue" + (v.slug === focal ? " isfocal" : "");
+    li.innerHTML = `
+      <span class="ord">${v.order}</span>
+      <div class="vmid">
+        <span class="vname">${esc(v.name)}</span>
+        <span class="help">?<span class="tip">${tipHTML(v)}</span></span>
+        ${v.slug === focal ? ' <span class="tier" style="color:var(--focal)">focal</span>' : ''}
+        <div class="tier">${esc(v.tier)}${v.custom ? "" : " · Franklin"}</div>
+        <textarea class="vnote ${e.fault ? "hasfault" : ""}" data-note="${v.slug}"
+          placeholder="Note (optional) — what went wrong, or what went right">${esc(e.note || "")}</textarea>
+      </div>
+      <label class="faultbox">
+        <input type="checkbox" data-fault="${v.slug}" ${e.fault ? "checked" : ""}> fault
+      </label>`;
+    ul.appendChild(li);
+  }
+  $("#focalNote").value = dayData.focal_note || "";
+  ul.querySelectorAll("[data-fault]").forEach(cb => {
+    cb.addEventListener("change", () => {
+      const note = ul.querySelector(`[data-note="${cb.dataset.fault}"]`);
+      note.classList.toggle("hasfault", cb.checked);
+      if (cb.checked) note.focus();
+    });
+  });
+}
+
+async function loadDay() {
+  const day = $("#datePick").value;
+  await loadConfig(day);
+  renderHeader();
+  const dayData = await (await fetch("/api/day?date=" + day)).json();
+  renderList(dayData);
+  dayLogged = !!dayData.reviewed_at;
+  loggedAt = dayData.reviewed_at || null;
+  reflectLogged();
+}
+
+async function save() {
+  const day = $("#datePick").value;
+  if (dayLogged) {
+    const t = loggedAt ? loggedAt.replace("T", " ").slice(0, 16) : "earlier today";
+    const ok = await confirmModal("Overwrite this day?",
+      `You already logged ${day} (${t}). Saving replaces that review.`);
+    if (!ok) return;
+  }
+  const entries = {};
+  document.querySelectorAll("[data-fault]").forEach(cb => {
+    const slug = cb.dataset.fault;
+    const note = document.querySelector(`[data-note="${slug}"]`).value;
+    entries[slug] = { fault: cb.checked, note };
+  });
+  const body = { day, focal_note: $("#focalNote").value, entries };
+  const btn = $("#saveBtn"); btn.disabled = true;
+  const res = await (await fetch("/api/save", {
+    method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(body)
+  })).json();
+  btn.disabled = false;
+  if (res.ok) {
+    toast(`Saved — ${day} (week ${res.week})`);
+    dayLogged = true;
+    loggedAt = new Date().toISOString().slice(0, 16);
+    reflectLogged();
+  } else { toast("Save failed"); }
+}
+
+/* ---- charts ---- */
+function destroy(k){ if(charts[k]){charts[k].destroy(); charts[k]=null;} }
+
+let gridAnchor = null;  // ISO date inside the week the grid is showing
+function addDays(iso, n) {
+  const d = new Date(iso + "T00:00:00Z");   // parse as UTC...
+  d.setUTCDate(d.getUTCDate() + n);          // ...and shift in UTC, so no tz drift
+  return d.toISOString().slice(0, 10);
+}
+function fmtDMY(iso) {            // 2026-06-02 -> 02-06-26
+  const [y, m, d] = iso.split("-");
+  return `${d}-${m}-${y.slice(2)}`;
+}
+
+async function renderGrid() {
+  if (!gridAnchor) gridAnchor = $("#datePick").value;
+  const g = await (await fetch("/api/grid?date=" + gridAnchor)).json();
+  gridAnchor = g.cols[0];  // normalize to the week's start
+  $("#gridWeekLabel").textContent =
+    `Week ${g.week} · ${fmtDMY(g.cols[0])} – ${fmtDMY(g.cols[g.cols.length - 1])}`;
+  $("#gridPrev").disabled = g.week <= 1;
+  $("#gridNote").textContent = `Red = fault, green = held, blank = not reviewed.`;
+  let h = "<table class='grid'><tr><th class='rowlab'>Virtue</th>";
+  for (const c of g.cols) h += `<th>${fmtDMY(c)}</th>`;  // DD-MM-YY
+  h += "</tr>";
+  for (const r of g.matrix) {
+    const isF = r.slug === g.focal;
+    h += `<tr class='${isF?"focalrow":""}'><td class='rowlab'>${esc(r.name)}</td>`;
+    for (const c of r.cells) {
+      if (c === null) h += "<td class='cell-n'>·</td>";
+      else if (c)     h += "<td class='cell-f'>✕</td>";
+      else            h += "<td class='cell-o'>○</td>";
+    }
+    h += "</tr>";
+  }
+  h += "</table>";
+  $("#gridWrap").innerHTML = h;
+}
+
+async function renderCharts() {
+  gridAnchor = $("#datePick").value;  // open on the week of the selected day
+  await renderGrid();
+  const d = await (await fetch("/api/charts")).json();
+
+  destroy("daily");
+  charts.daily = new Chart($("#cDaily"), {
+    type: "line",
+    data: { labels: d.daily_totals.map(x => x.day.slice(5)),
+      datasets: [{ data: d.daily_totals.map(x => x.faults), label: "faults",
+        borderColor: "#c0392b", backgroundColor: "rgba(192,57,43,.1)", fill: true, tension: .25 }] },
+    options: { plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+
+  const pv = d.per_virtue.slice().sort((a,b) => b.faults - a.faults);
+  destroy("virtue");
+  charts.virtue = new Chart($("#cVirtue"), {
+    type: "bar",
+    data: { labels: pv.map(x => x.name),
+      datasets: [{ data: pv.map(x => x.faults), label: "faults",
+        backgroundColor: "#b07a2e" }] },
+    options: { indexAxis: "y", plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+
+  destroy("pass");
+  if (d.max_pass < 1) {
+    $("#passNote").textContent =
+      "Franklin's thesis: faults diminish each time the cycle comes around. Fills in after your first full 23-week pass (you're in pass " + (d.max_pass+1) + ").";
+  } else {
+    $("#passNote").textContent = "Faults per virtue, by cycle pass. Bars should shrink left to right.";
+    const labels = VIRT.map(v => v.name);
+    const dsets = [];
+    const colors = ["#c0392b","#b07a2e","#2f6f4f","#3a5a8c"];
+    for (let p = 0; p <= d.max_pass; p++) {
+      dsets.push({ label: "pass " + (p+1),
+        data: VIRT.map(v => (d.passes[v.slug] && d.passes[v.slug][p]) || 0),
+        backgroundColor: colors[p % colors.length] });
+    }
+    charts.pass = new Chart($("#cPass"), {
+      type: "bar", data: { labels, datasets: dsets },
+      options: { indexAxis: "y", scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
+    });
+  }
+
+  const fl = d.focal_lift.filter(x => x.focal_days > 0);
+  destroy("focal");
+  charts.focal = new Chart($("#cFocal"), {
+    type: "bar",
+    data: { labels: fl.map(x => x.name),
+      datasets: [
+        { label: "while focal", data: fl.map(x => x.focal_rate == null ? 0 : +(x.focal_rate*100).toFixed(0)),
+          backgroundColor: "#b07a2e" },
+        { label: "rest of time", data: fl.map(x => x.other_rate == null ? 0 : +(x.other_rate*100).toFixed(0)),
+          backgroundColor: "#cfd6cc" }
+      ] },
+    options: { scales: { y: { beginAtZero: true, title: { display: true, text: "% of days a fault" } } } }
+  });
+  if (!fl.length) $("#cFocal").parentElement.querySelector(".note").textContent =
+    "No virtue has had a focal week with a logged review yet. Comes alive once you've reviewed during a focal week.";
+}
+
+/* ---- tabs ---- */
+document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
+  document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+  t.classList.add("active");
+  const tab = t.dataset.tab;
+  $("#tab-review").classList.toggle("hide", tab !== "review");
+  $("#tab-charts").classList.toggle("hide", tab !== "charts");
+  if (tab === "charts") renderCharts();
+}));
+
+$("#datePick").addEventListener("change", loadDay);
+$("#saveBtn").addEventListener("click", save);
+$("#gridPrev").addEventListener("click", () => { gridAnchor = addDays(gridAnchor, -7); renderGrid(); });
+$("#gridNext").addEventListener("click", () => { gridAnchor = addDays(gridAnchor, 7); renderGrid(); });
+
+loadDay();
+</script>
+</body>
+</html>
