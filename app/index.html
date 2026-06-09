@@ -77,6 +77,22 @@
   td.cell-f { background: var(--fault); color: #fff; }
   td.cell-o { background: #eef3ef; color: var(--accent); }
   td.cell-n { background: #fafafa; color: #bbb; }
+  td.has-note { cursor: help; }
+  td.has-note::after { content: ""; position: absolute; top: 2px; right: 2px;
+                       width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: .45; }
+  table.grid td { position: relative; }
+
+  /* cursor-following note tooltip on grid cells */
+  #cellTip { position: fixed; z-index: 50; max-width: 320px; pointer-events: none;
+             background: var(--ink); color: #fff; padding: 9px 12px; border-radius: 10px;
+             font-size: 12.5px; line-height: 1.45; box-shadow: 0 6px 22px rgba(0,0,0,.24);
+             transform: translate(-50%, calc(-100% - 12px)); opacity: 0; transition: opacity .1s;
+             white-space: pre-wrap; }
+  #cellTip.show { opacity: 1; }
+  #cellTip .tiphead { display: block; font-weight: 700; margin-bottom: 4px; font-size: 11.5px;
+                      letter-spacing: .02em; text-transform: uppercase; color: #c9c9cf; }
+  #cellTip::after { content: ""; position: absolute; left: 50%; top: 100%; transform: translateX(-50%);
+                    border: 6px solid transparent; border-top-color: var(--ink); }
   tr.focalrow td.rowlab { color: var(--focal); }
   .navbtn { font: inherit; font-size: 13px; padding: 4px 11px; border: 1px solid var(--line);
             border-radius: 8px; background: var(--card); cursor: pointer; }
@@ -363,11 +379,15 @@ async function renderGrid() {
   for (const r of g.matrix) {
     const isF = r.slug === g.focal;
     h += `<tr class='${isF?"focalrow":""}'><td class='rowlab'>${esc(r.name)}</td>`;
-    for (const c of r.cells) {
-      if (c === null) h += "<td class='cell-n'>·</td>";
-      else if (c)     h += "<td class='cell-f'>✕</td>";
-      else            h += "<td class='cell-o'>○</td>";
-    }
+    r.cells.forEach((c, i) => {
+      if (c === null) { h += "<td class='cell-n'>·</td>"; return; }
+      const note = c.note || "";
+      const cls = (c.fault ? "cell-f" : "cell-o") + (note ? " has-note" : "");
+      const attrs = note
+        ? ` data-note="${esc(note)}" data-vname="${esc(r.name)}" data-day="${esc(fmtDMY(g.cols[i]))}"`
+        : "";
+      h += `<td class='${cls}'${attrs}>${c.fault ? "✕" : "○"}</td>`;
+    });
     h += "</tr>";
   }
   h += "</table>";
@@ -451,6 +471,32 @@ $("#datePick").addEventListener("change", loadDay);
 $("#saveBtn").addEventListener("click", save);
 $("#gridPrev").addEventListener("click", () => { gridAnchor = addDays(gridAnchor, -7); renderGrid(); });
 $("#gridNext").addEventListener("click", () => { gridAnchor = addDays(gridAnchor, 7); renderGrid(); });
+
+// Cursor-following note tooltip over grid cells.
+const cellTip = document.createElement("div");
+cellTip.id = "cellTip";
+document.body.appendChild(cellTip);
+function placeTip(e) {
+  cellTip.style.left = e.clientX + "px";
+  cellTip.style.top = e.clientY + "px";
+}
+const gridWrap = $("#gridWrap");
+gridWrap.addEventListener("mouseover", e => {
+  const td = e.target.closest("td.has-note");
+  if (!td) return;
+  cellTip.innerHTML =
+    `<span class='tiphead'>${esc(td.dataset.vname)} · ${esc(td.dataset.day)}</span>${esc(td.dataset.note)}`;
+  placeTip(e);
+  cellTip.classList.add("show");
+});
+gridWrap.addEventListener("mousemove", e => {
+  if (cellTip.classList.contains("show")) placeTip(e);
+});
+gridWrap.addEventListener("mouseout", e => {
+  if (!e.target.closest("td.has-note")) return;
+  const to = e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest("td.has-note");
+  if (!to) cellTip.classList.remove("show");
+});
 
 loadDay();
 </script>

@@ -43,12 +43,13 @@ The app ships with no entries. Your first saved review becomes day 1 of the cycl
 
 ## The coaching skill (optional)
 
-`/.claude/skills/virtue-review/` is a [Claude Code](https://claude.com/claude-code)
+`.claude/skills/virtue-review/` is a [Claude Code](https://claude.com/claude-code)
 skill that reads your log and writes a coaching report — where you're failing,
 improving, and stalling, with patterns mined from your notes. It is read-only; it
-never edits your data. The skill's "lens" reflects the author's own struggles and
-framing on purpose — edit it to fit yours. You don't need it to use the app; the
-web dashboard stands alone.
+never edits your data. Its "lens" reads the data through your named primary struggle
+and watches the virtues your `config.json` marks with a `bite` (the way a virtue can
+curdle into its opposite) — edit the lens to fit you. You don't need it to use the
+app; the web app stands alone.
 
 ## Make it yours
 
