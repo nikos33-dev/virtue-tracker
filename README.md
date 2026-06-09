@@ -6,9 +6,9 @@ thirteen virtues — adapted here to 23 (Franklin's 13 plus 10 custom). One foca
 virtue per week on a 23-week cycle. Each day you mark a "black dot" against any
 virtue you failed, and leave a note on what went wrong — or what went right.
 
-Zero dependencies. It's pure Python standard library plus a charting script
-loaded from a CDN. No `pip install`, no accounts, no server in the cloud. Your
-data is a plain text file on your own machine.
+No Python dependencies and no `pip install` — it's pure standard library. The one
+external piece is the chart library (Chart.js), loaded from a CDN to draw the graphs.
+No accounts, no server in the cloud; your data is a plain text file on your own machine.
 
 ## Run it
 
