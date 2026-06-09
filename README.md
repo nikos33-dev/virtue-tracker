@@ -8,7 +8,7 @@ virtue you failed, and leave a note on what went wrong — or what went right.
 
 No Python dependencies and no `pip install` — it's pure standard library. The one
 external piece is the chart library (Chart.js), loaded from a CDN to draw the graphs.
-No accounts, no server in the cloud; your data is a plain text file on your own machine.
+No accounts, no server in the cloud; your data of record is a plain-text JSONL file on your machine that you can open and edit (a disposable SQLite index is rebuilt from it for the charts).
 
 ## Run it
 
