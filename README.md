@@ -1,3 +1,4 @@
+
 # Virtue Tracker
 
 A daily moral-inventory web app modeled on Benjamin Franklin's method of the
@@ -22,9 +23,12 @@ It opens `http://localhost:8765` in your browser.
   log a black dot. Every virtue has a note field — record a fault's cause or a win
   worth keeping. The date picker reviews any day; a review opened before 4am
   defaults to the day that just ended.
+  <img width="1054" height="739" alt="Screenshot 2026-06-09 at 2 02 16 PM" src="https://github.com/user-attachments/assets/9670fee2-608d-4648-b36b-063257983c5d" />
+
 - **Charts tab** — a weekly Franklin grid (with prev/next navigation), daily faults
   over time, faults by virtue, pass-over-pass (Franklin's claim that faults
   diminish each cycle), and focal-week lift.
+<img width="1054" height="739" alt="Screenshot 2026-06-09 at 2 03 17 PM" src="https://github.com/user-attachments/assets/aaf45658-e0d5-49ad-8f4e-04ae7977ff53" />
 
 ## How it stores data
 
